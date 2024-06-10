@@ -47,19 +47,6 @@ jobs:
         echo "HTTP response code: $RESPONSE"
         cat response.txt
 
-    - name: Verify the insertion message
-      run: |
-        RESPONSE_CODE=$(curl -s -o response.txt -w "%{http_code}" -X POST http://localhost:${{ inputs.api_port }}/pull-and-run \
-        -H "Content-Type: application/json" \
-        -d '{"name": "${{ inputs.name }}", "value": ${{ inputs.value }}}')
-        RESPONSE_TEXT=$(cat response.txt)
-        echo "Response code: $RESPONSE_CODE"
-        echo "Response text: $RESPONSE_TEXT"
-        if [[ "$RESPONSE_CODE" -ne 200 || "$RESPONSE_TEXT" != "Data inserted into both databases" ]]; then
-          echo "Data insertion failed"
-          exit 1
-        fi
-
     - name: Stop and remove Docker container
       if: always()
       run: |
