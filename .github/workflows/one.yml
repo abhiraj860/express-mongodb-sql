@@ -10,7 +10,7 @@ on:
       api_port:
         description: 'API Port'
         required: true
-        default: '3000'
+        default: '4000'
       name:
         description: 'Name parameter for POST request'
         required: true
