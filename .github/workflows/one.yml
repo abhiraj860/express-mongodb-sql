@@ -55,7 +55,7 @@ jobs:
 
     - name: Send POST request to the Node.js application
       run: |
-        RESPONSE=$(curl -s -o response.txt -w "%{http_code}" -X POST http://localhost:${{ inputs.api_port }}/pull-and-run \
+        RESPONSE=$(curl -s -o response.txt -w "%{http_code}" -X POST http://localhost:${{ inputs.api_port }}/data \
         -H "Content-Type: application/json" \
         -d '{"name": "${{ inputs.name }}", "value": "${{ inputs.value }}"}')
         echo "HTTP response code: $RESPONSE"
