@@ -1,0 +1,74 @@
+name: Manual First Run
+
+on:
+  workflow_dispatch:
+    inputs:
+      image_tag:
+        description: 'Docker Image Tag'
+        required: false
+        default: 'latest'
+      api_port:
+        description: 'API Port'
+        required: true
+        default: '3000'
+      name:
+        description: 'Name parameter for POST request'
+        required: true
+      value:
+        description: 'Value parameter for POST request'
+        required: true
+
+jobs:
+  run-docker-image:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v2
+
+    - name: Pull Docker image from Docker Hub
+      run: docker pull abhiraj860/sql-mongodb-node:${{ inputs.image_tag }}
+
+    - name: Run Docker container
+      run: |
+        docker run --privileged -d -p ${{ inputs.api_port }}:${{ inputs.api_port }} --name my-container abhiraj860/node_python_docker:${{ inputs.image_tag }} > container_logs.txt
+
+    - name: Install curl
+      run: sudo apt-get update && sudo apt-get install -y curl
+
+    - name: Wait for the container to be ready
+      run: sleep 10
+
+    - name: Send POST request to the Node.js application
+      run: |
+        RESPONSE=$(curl -s -o response.txt -w "%{http_code}" -X POST http://localhost:${{ inputs.api_port }}/pull-and-run \
+        -H "Content-Type: application/json" \
+        -d '{"name": "${{ inputs.name }}", "value": ${{ inputs.value }}}')
+        echo "HTTP response code: $RESPONSE"
+        cat response.txt
+
+    - name: Verify the insertion message
+      run: |
+        RESPONSE_CODE=$(curl -s -o response.txt -w "%{http_code}" -X POST http://localhost:${{ inputs.api_port }}/pull-and-run \
+        -H "Content-Type: application/json" \
+        -d '{"name": "${{ inputs.name }}", "value": ${{ inputs.value }}}')
+        RESPONSE_TEXT=$(cat response.txt)
+        echo "Response code: $RESPONSE_CODE"
+        echo "Response text: $RESPONSE_TEXT"
+        if [[ "$RESPONSE_CODE" -ne 200 || "$RESPONSE_TEXT" != "Data inserted into both databases" ]]; then
+          echo "Data insertion failed"
+          exit 1
+        fi
+
+    - name: Stop and remove Docker container
+      if: always()
+      run: |
+        docker stop my-container
+        docker rm my-container
+
+    - name: Upload logs
+      if: always()
+      uses: actions/upload-artifact@v2
+      with:
+        name: container-logs
+        path: container_logs.txt
